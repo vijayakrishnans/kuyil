@@ -1,0 +1,105 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web-console-next
+  description: Next.js 15 + opennextjs/cloudflare delivery of the Kuyil web console (per-environment, Workers + Static Assets)
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-ui
+  path: apps/web-console-next
+  # Its own lane per environment (execution.lanes in intent.yaml): the Next.js
+  # build is the longest job in the plan, and a shared lane would wait on it.
+  lane: isolated
+  # The deploy smoke health-checks the api-edge worker
+  # (kuyil-api-edge-<env>/health), so api-edge must be live before this
+  # component's stage/prod deploy+smoke runs. Without this ordering the smoke
+  # races api-edge's concurrent deploy and fails with curl exit 22 (404).
+  dependsOn:
+    - component: api-edge
+    # Shared workspace packages this component BUNDLES. Declared so a change
+    # to one marks this component changed and redeploys it — without the
+    # edge, `orun plan --changed` keys on `path:` alone and a worker can run
+    # a months-old copy of a package that has since changed underneath it.
+    - component: contracts
+    - component: sdk
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@saas/web-console-next"
+    wranglerConfig: wrangler.jsonc
+
+    # @opennextjs/cloudflare emits a Worker entrypoint plus a static-assets
+    # directory bound via ASSETS — both are deployed in one `wrangler deploy`.
+    workerEntrypoint: .open-next/worker.js
+    assetsDir: .open-next/assets
+
+    # Worker is named per-env (kuyil-web-console-next-{dev,stage,prod}),
+    # matching the prior Pages-project naming convention so the cutover in
+    # Task 0083 only needs to repoint the custom domain.
+    workerName: kuyil-web-console-next
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exposed to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: vijayakrishnan12994
+
+    # NO environmentBuildVar (saas-console-artifact CA2): the console learns its
+    # environment at runtime — CONSOLE_DEPLOY_ENV if the deploy sets one, else
+    # the `-<env>` its workers.dev host carries — so the build is the same for
+    # every environment and a build made anywhere can be deployed to any of
+    # them. It used to pass NEXT_PUBLIC_DEPLOY_ENV, which baked the environment
+    # into the bundle and is exactly what stopped one build from serving both.
+
+    installCommand: pnpm install --frozen-lockfile
+    # saas-console-artifact CA4: with a console-artifact.pin.json (written by
+    # the bootstrap's 06-console phase) and sources that still hash to it, this
+    # fetches the baseline's prebuilt console and verifies its sha256 instead
+    # of building. No pin, changed sources or an unreachable artifact all fall
+    # back to the normal turbo build, so a product that never saw a published
+    # artifact behaves exactly as before.
+    buildCommand: node scripts/console-artifact.mjs build
+
+    # Smoke: follow redirects (root `redirect("/orgs")` is a 307) and confirm
+    # the SSR'd page contains the console marker. The api-edge worker is the
+    # same hostname pattern as before.
+    # Buffer curl into a variable before grepping so `grep -q` matching early
+    # cannot SIGPIPE curl and produce a flaky exit-23 race (observed on prod
+    # in main CI run 26628207777 even though the site was live).
+    # `${WORKERS_DEV_SUBDOMAIN}` is exported by the composition's deploy/smoke
+    # step from the `workersDevSubdomain` parameter above (BF3: no duplicated
+    # subdomain literal here).
+    smokeCommand: "html=$(curl -sfL \"${DEPLOYED_URL}/\") && echo \"${html}\" | grep -q 'Kuyil Console' && health=$(curl -sf \"https://kuyil-api-edge-${ORUN_ENVIRONMENT}.${WORKERS_DEV_SUBDOMAIN}.workers.dev/health\") && echo \"${health}\" | grep -q ok"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web-console-next
+    runtime: cloudflare
+# ci: re-trigger web-console after api-edge is live (20260622T142123Z)
+# orun: redeploy 06-console 20261102T080614Z
