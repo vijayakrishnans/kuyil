@@ -22,7 +22,7 @@
     },
     "stage": {
       "workers_dev": false,
-      "vars": { "ENVIRONMENT": "stage", "SOCIAL_ADMINS": "", "REPLY_DEPOSITS_ENABLED": "true" },
+      "vars": { "ENVIRONMENT": "stage", "SOCIAL_ADMINS": "usr_0db8b1e123e741eeb05cb39eeebc033c", "REPLY_DEPOSITS_ENABLED": "true" },
       // Refund reply deposits nobody acted on within 24h.
       "triggers": { "crons": ["*/15 * * * *"] },
       "hyperdrive": [
