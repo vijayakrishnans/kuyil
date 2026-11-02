@@ -1,0 +1,15 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-6
+  title: "KY3: your feeds and filters"
+spec:
+  goal: Readers choose feeds and filters, see why a post appears, and can publish their own.
+  affects:
+    - default/kuyil/kuyil-web
+    - apps/kuyil-web/**
+    - tasks/**
+  doneWhen:
+    - A filtered post collapses with its reason and opens with show anyway.
+    - One user publishes a filter and a second subscribes and sees it apply.
+  gates: []

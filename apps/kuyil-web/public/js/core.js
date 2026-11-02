@@ -50,6 +50,11 @@ export function h(tag, attrs, ...children) {
   return el;
 }
 
+/** Replace an element's contents, flattening nested lists and dropping empties. */
+export function fill(el, ...children) {
+  el.replaceChildren(...children.flat(Infinity).filter((c) => c !== undefined && c !== null && c !== false));
+}
+
 export function link(href, attrs, ...children) {
   return h("a", { ...attrs, href, onclick: (e) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
@@ -59,7 +64,7 @@ export function link(href, attrs, ...children) {
 
 export function go(path) { history.pushState(null, "", path); render(); }
 
-export const rupees = (minor) => `₹${(minor / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+export const rupees = (minor) => `₹${(minor / 100).toLocaleString("en-IN", minor % 100 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : {})}`;
 
 export function ago(iso) {
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -155,7 +160,7 @@ export function composer({ replyTo = null, placeholder = "What's happening?", on
     for (const x of extras) if (x.collect) Object.assign(payload, x.collect());
     try {
       const r = await api("POST", "/v1/social/posts", payload);
-      text.value = ""; count.textContent = "0 / 500";
+      if (text.value.trim() === body) { text.value = ""; count.textContent = "0 / 500"; }
       for (const x of extras) if (x.reset) x.reset();
       if (r.data.depositMinor) toast(`Posted. ${rupees(r.data.depositMinor)} deposit held until they respond.`);
       onPosted(r.data.post);
@@ -174,7 +179,7 @@ export function route(pattern, view) { K.routes.push({ pattern, view }); }
 const root = () => document.getElementById("app");
 
 function topBar() {
-  const here = location.pathname;
+  const here = currentPath();
   const nav = (href, label) => link(href, { class: here === href ? "on" : null }, label);
   return h("header", { class: "top" },
     K.env && K.env !== "prod" && h("div", { class: "banner" }, `Test environment (${K.env}). Sign-in codes appear on screen and money is pretend.`),
@@ -186,10 +191,15 @@ function topBar() {
       )));
 }
 
+/** The decoded path: Cloudflare's asset layer redirects /@name to /%40name. */
+function currentPath() {
+  try { return decodeURIComponent(location.pathname); } catch { return location.pathname; }
+}
+
 let renderId = 0;
 export async function render() {
   const id = ++renderId;
-  const path = location.pathname;
+  const path = currentPath();
   const main = h("main");
   root().replaceChildren(topBar(), main);
   if (needsProfile() && path !== "/welcome" && path !== "/login") { history.replaceState(null, "", "/welcome"); return render(); }
@@ -197,8 +207,8 @@ export async function render() {
     const m = path.match(r.pattern);
     if (!m) continue;
     try {
-      const out = await r.view(...m.slice(1).map(decodeURIComponent));
-      if (id === renderId) main.replaceChildren(...[out].flat().filter(Boolean));
+      const out = await r.view(...m.slice(1));
+      if (id === renderId) fill(main, out);
     } catch (e) {
       if (id === renderId) main.replaceChildren(h("div", { class: "empty" }, e.status === 404 ? "That isn't here." : errorBox(e)));
     }
