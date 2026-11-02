@@ -1,0 +1,64 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: supabase
+  description: Provisions Supabase projects for stage and prod and wires credentials into orun secrets
+  labels:
+    domain: infra
+    scope: database
+
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+
+  parameters:
+    orgName: sourceplane
+    stackName: supabase
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    # Supabase region is surfaced to Terraform as TF_VAR_supabaseRegion by the
+    # terraform composition's parameter→TF_VAR loop. The org id is NOT committed
+    # here: it is account-specific and injected as TF_VAR_supabaseOrgId from the
+    # SUPABASE_ORG_ID CI secret (see .github/workflows/ci.yml). Keeping it out of
+    # parameters also prevents the param→TF_VAR loop from overriding the secret.
+    supabaseRegion: ap-southeast-1
+    # SEC-JOB: post-apply, these outputs are queued on the runner's sink and
+    # lease-published onto the project/{{env}} rung by the runner.
+    secretOutputs: "SUPABASE_PROJECT_REF=project_ref,SUPABASE_DB_PASSWORD=database_password,SUPABASE_DB_URL=connection_uri"
+
+  # Both values resolve from orun secrets (project rung, brokered from the
+  # Supabase integration): a short-lived Management-API access token minted
+  # fresh per run (management-access template — the provider reads
+  # SUPABASE_ACCESS_TOKEN from env natively), and the org id as a non-secret
+  # connection fact (org-id template) surfaced straight to Terraform. The
+  # SUPABASE_ORG_ID CI secret and its TF_VAR mapping are retired.
+  secretEnv:
+    SUPABASE_ACCESS_TOKEN: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_ACCESS_TOKEN"
+    TF_VAR_supabaseOrgId: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_ORG_ID"
+
+  subscribe:
+    environments:
+      - name: stage
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+# ci: re-trigger supabase apply with org id sourced from SUPABASE_ORG_ID secret
+# ci: re-trigger supabase apply — fresh integration connection int_dd34bb26 (20260821T055915Z)
+# orun: redeploy 03-infrastructure 20261102T071155Z
