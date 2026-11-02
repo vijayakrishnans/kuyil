@@ -1,0 +1,142 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: api-edge
+  description: Cloudflare Worker for the API edge Runtime
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  path: apps/api-edge
+  dependsOn:
+    # ENFORCED ON MAIN: the data plane before anything that reads its wiring,
+    # and policy-worker before anything that holds a service binding — its
+    # pre-deploy creates a placeholder for every binding target that does not
+    # exist yet (tooling/deploy/fleet-stubs.mjs), so each worker's first
+    # deploy can carry its full bindings. Peer edges stay advisory: they are
+    # runtime calls, not deploy order. A pull request deploys nothing, so
+    # nothing on one waits.
+    - component: policy-worker
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: cloudflare-hyperdrive
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: cloudflare-kv
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: projects-worker
+    - component: events-worker
+    - component: config-worker
+    - component: webhooks-worker
+    - component: billing-worker
+    - component: integrations-worker
+    - component: identity-worker
+    - component: membership-worker
+    - component: metering-worker
+    - component: notifications-worker
+    # Shared workspace packages this component BUNDLES. Declared so a change
+    # to one marks this component changed and redeploys it — without the
+    # edge, `orun plan --changed` keys on `path:` alone and a worker can run
+    # a months-old copy of a package that has since changed underneath it.
+    - component: contracts
+    - component: db
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        # Peer edges are runtime calls, not deploy order: every binding
+        # target exists before this deploys (policy-worker's pre-deploy
+        # places one, tooling/deploy/fleet-stubs.mjs), so nothing in this
+        # lane waits on a peer. The edges marked `mode: enforced` above
+        # still order.
+        dependencyMode: advisory
+        profile: verify
+        # wire-live (deploy profile) is the only reader, and dev never
+        # deploys — scoping keeps dev jobs from requiring stage+prod
+        # credentials they can never use. See specs/profiles/free-tier.md.
+        secretEnv:
+          WIRING_CLOUDFLARE_HYPERDRIVE_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_HYPERDRIVE_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_KV_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_KV"
+          WIRING_CLOUDFLARE_KV_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_KV"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        # Peer edges are runtime calls, not deploy order: every binding
+        # target exists before this deploys (policy-worker's pre-deploy
+        # places one, tooling/deploy/fleet-stubs.mjs), so nothing in this
+        # lane waits on a peer. The edges marked `mode: enforced` above
+        # still order.
+        dependencyMode: advisory
+        profile: verify
+        # wire-live (deploy profile) is the only reader, and dev never
+        # deploys — scoping keeps dev jobs from requiring stage+prod
+        # credentials they can never use. See specs/profiles/free-tier.md.
+        secretEnv:
+          WIRING_CLOUDFLARE_HYPERDRIVE_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_HYPERDRIVE_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_KV_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_KV"
+          WIRING_CLOUDFLARE_KV_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_KV"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@saas/api-edge"
+    wranglerConfig: wrangler.jsonc
+
+    # BF6 deploy-time wiring (pilot): wrangler.jsonc is rendered, never
+    # committed. Verify lanes render from wiring.fixture.json (offline);
+    # deploy lanes resolve real IDs from the Secrets Manager wiring manifest
+    # published by the named infra components (BF5).
+    wranglerTemplate: wrangler.template.jsonc
+    wiringComponents: "cloudflare-hyperdrive,cloudflare-kv"
+    wiringEnvs: "stage,prod"
+    wiringFixture: wiring.fixture.json
+    orgName: sourceplane
+    owner: sourceplane
+    repo: kuyil
+
+    installCommand: pnpm install --frozen-lockfile
+    buildCommand: pnpm exec turbo run build --filter=@saas/api-edge
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@saas/api-edge
+
+    dryRunCommand: pnpm exec wrangler deploy --dry-run --config wrangler.jsonc --env prod
+    deployCommand: pnpm exec wrangler deploy --config wrangler.jsonc --env prod
+
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: api
+    runtime: cloudflare
+# ci: re-trigger deploy (batch C — integrations + api-edge gateway, 20260622T141448Z)
+# ci: re-trigger deploy (batch C — integrations + api-edge gateway, 20260622T141448Z)
+# orun: redeploy 05-edge 20261102T080324Z
