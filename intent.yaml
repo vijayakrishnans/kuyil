@@ -1,0 +1,220 @@
+apiVersion: sourceplane.io/v1
+kind: Intent
+
+metadata:
+  name: kuyil
+  description: Reusable Cloudflare and Supabase multi-tenant SaaS starter
+  namespace: sourceplane
+
+execution:
+  state:
+    backendUrl: https://api-edge-prod.oruncloud.workers.dev
+    # Declared, enforced tenancy: the workspace claim is sent on every remote op
+    # (including the credential-free CI OIDC exchange) so orun-cloud can enforce
+    # claim ⊆ authorized. Declaring it implies strict mode — a non-interactive
+    # run that resolves no workspace fails fast (specs/oidc-ci-tenancy §4.1).
+    # `workspace` is the leading spelling in orun v2.20.0 (a ws_ Workspace ID,
+    # slug, or legacy org_ id); it supersedes the deprecated `org:` alias.
+    workspace: ws_0014GSP6
+    requireOrg: true
+    # Push/sync the resolved catalog to orun-cloud after a successful plan on the
+    # default branch, keeping the org-global catalog head fresh without an
+    # explicit `--push-catalog`.
+    autopushCatalog: true
+  # Lanes (orun >= v2.76.0): CI runs one GitHub job per LANE, not per orun job.
+  # Auto mode leaves a small plan as one lane per job and packs a bigger one,
+  # keeping each environment on its own runners and every dependency chain
+  # (supabase -> hyperdrive -> db-migrate -> the workers that read their
+  # wiring) inside one lane. web-console-next is isolated (component.yaml):
+  # its build is the longest and must not hold up a lane. Every job still
+  # gets its own check run, named as before, so branch protection is
+  # unaffected.
+  lanes:
+    mode: auto
+    # The budget is the runner pool: a free GitHub plan starts 20 jobs at
+    # once, and `plan` is done before the lanes start, so 18 lanes fit in one
+    # wave. Auto mode shares them between environments by job count, so the
+    # fleet landing (twelve workers on stage and prod, plus dev's verify
+    # jobs) gives stage and prod several lanes each instead of one.
+    maxLanes: 18
+    # Jobs in flight inside a lane = the runner's cores (4 on ubuntu-latest):
+    # above that each job only slows the others down.
+    concurrency: auto
+
+compositions:
+  sources:
+    # The composition stack lives in sourceplane/stack-tectonic and is consumed
+    # as a published OCI artifact rather than a repo-local directory. Pin an
+    # explicit version: a bare repository reference resolves to `:latest`, which
+    # would let a catalog release change this repo's execution contracts without
+    # a commit here. Bumping the tag is the deliberate upgrade step.
+    - name: stack-tectonic
+      kind: oci
+      ref: oci://ghcr.io/sourceplane/stack-tectonic:0.20.0
+  resolution:
+    precedence:
+      - stack-tectonic
+    bindings:
+      terraform: stack-tectonic
+      cloudflare-domain: stack-tectonic
+      db-migrate: stack-tectonic
+
+discovery:
+  roots:
+    - apps/
+    - infra/
+    - packages/
+    - tests/
+
+automation:
+  triggerBindings:
+    github-pull-request:
+      description: Pull request validation
+      on:
+        provider: github
+        event: pull_request
+        actions:
+          - opened
+          - synchronize
+          - reopened
+          - ready_for_review
+        baseBranches:
+          - main
+      plan:
+        scope: changed
+        base: pull_request.base.sha
+        head: pull_request.head.sha
+
+    github-push-main:
+      description: Main branch stack convergence after merge
+      on:
+        provider: github
+        event: push
+        branches:
+          - main
+
+    local-development:
+      description: Local testing with full Terraform execution
+      on:
+        provider: local
+
+    # ON-DEMAND DEPLOY OF ONE COMPONENT (orun >= v2.84.0, `scope: selected`).
+    #
+    # Everything else here plans from a diff: a pull request verifies what
+    # changed, a merge converges what changed. Neither can answer "put
+    # api-edge back on stage" — the most common thing anyone actually wants
+    # from a deployed fleet, and the reason a build whose edge is missing has
+    # no move short of an empty commit.
+    #
+    # A dispatch IS its scope: the components and environments named in the
+    # event are the whole plan, `--changed` is ignored, and an empty selection
+    # or an unknown component name is an error rather than "everything" (which
+    # is what a hand-written `--component` branch in ci.yml would have given
+    # on a typo).
+    #
+    # `autopush: false` because a one-component deploy is not a statement
+    # about the catalog: the convergence on main owns that, and a dispatch
+    # that pushed a partial snapshot would make the catalog describe a plan
+    # nobody ran.
+    #
+    # `requireRule` is DELIBERATELY off. Turning it on means a component is
+    # dispatchable only if one of its `profileRules` names this binding —
+    # safer, and 45 components' worth of opt-in. The guard that matters here
+    # is the environment list below: a dispatch can only reach an environment
+    # that activates this binding, so dev (verify-only) cannot be deployed
+    # into by anybody.
+    github-dispatch:
+      description: Deploy named components to one environment, on demand
+      on:
+        provider: github
+        event: workflow_dispatch
+        branches:
+          - main
+      plan:
+        scope: selected
+        components: inputs.component
+        environments: inputs.environment
+        autopush: false
+
+environments:
+  dev:
+    description: Verify-only. Pull requests plan and verify here; nothing is deployed, so there is no door.
+    # dev only ever verifies (no component deploys to it), so nothing in it
+    # has to wait for anything: every dev job starts the moment a runner does.
+    dependencyMode: advisory
+    activation:
+      triggerRefs:
+        - github-pull-request
+        # @dev-lanes-deferred:ICAgICAgICAtIGdpdGh1Yi1wdXNoLW1haW4= (tooling/bootstrap/dev-lanes.mjs --restore puts it back)
+        - local-development
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: dev-
+        owner: sourceplane
+        repo: kuyil
+        CONSOLE_CUSTOM_DOMAIN: ""
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: kuyil.example.com
+
+  stage:
+    description: The fleet, the API edge and the console, deployed on every merge to main before prod.
+    url: https://kuyil-web-console-next-stage.vijayakrishnan12994.workers.dev
+    links:
+      - { title: API, url: https://kuyil-api-edge-stage.vijayakrishnan12994.workers.dev }
+      - { title: Health, url: https://kuyil-api-edge-stage.vijayakrishnan12994.workers.dev/health }
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - github-dispatch
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: stg-
+        owner: sourceplane
+        repo: kuyil
+        CONSOLE_CUSTOM_DOMAIN: stage.kuyil.example.com
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: kuyil.example.com
+
+  prod:
+    description: Where customers are. Deploys after stage converges on the same commit.
+    url: https://kuyil-web-console-next-prod.vijayakrishnan12994.workers.dev
+    links:
+      - { title: API, url: https://kuyil-api-edge-prod.vijayakrishnan12994.workers.dev }
+      - { title: Health, url: https://kuyil-api-edge-prod.vijayakrishnan12994.workers.dev/health }
+    activation:
+      triggerRefs:
+        - github-pull-request
+        - github-push-main
+        - github-dispatch
+    # @promotion-deferred:ICAgIHByb21vdGlvbjoKICAgICAgZGVwZW5kc09uOgogICAgICAgIC0gZW52aXJvbm1lbnQ6IHN0YWdl (tooling/bootstrap/promotion.mjs --restore puts it back)
+    parameterDefaults:
+      terraform:
+        lane: verify
+        namespace: sourceplane
+        namespacePrefix: prod-
+        owner: sourceplane
+        repo: kuyil
+        CONSOLE_CUSTOM_DOMAIN: prod.kuyil.example.com
+    policies:
+      requireApproval: "false"
+    env:
+      BASE_DOMAIN: kuyil.example.com
+
+# Repo-level catalog entity: front page + role-tagged docs (rendered in
+# the workspace Docs library, pinned to the commit by `orun plan`).
+repo:
+  displayName: kuyil
+  docs:
+    overview: README.md
+    pages:
+      - { path: ai/context/operations.md, role: runbook, title: Operating contract }
+      - { path: ai/context/deployment.md, role: reference, title: Live deployment manifest }
