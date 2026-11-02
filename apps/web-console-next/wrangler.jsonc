@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kuyil-web-console-next",
+  "main": ".open-next/worker.js",
+  // The one bundle in the fleet whose size is a live constraint: 2296 KiB
+  // gzipped unminified against the free plan's 3072 KiB cap. Minify takes it
+  // to ~1880 KiB. Every other worker gzips to 27-40 KiB and never comes near.
+  "minify": true,
+  "compatibility_date": "2024-12-30",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // THE PRODUCT'S IDENTITY AT RUNTIME, not in the build
+  // (saas-console-artifact CA1). The console is deployed from an artifact
+  // built once from the BASELINE's sources, so its compiled-in defaults say
+  // "Kuyil" whoever deploys it — these vars are the only place a product's own
+  // name reaches it. The rebrand rewrites the values here the same way it
+  // rewrites src/lib/app-config.ts, so a fork carries its own.
+  //
+  // There is no CONSOLE_DEPLOY_ENV: the console reads its environment from the
+  // `-<env>` its workers.dev host carries (CA2), which is what lets ONE build
+  // serve stage and prod. A custom-domain deploy, whose host names no
+  // environment, sets it here.
+  "vars": {
+    "CONSOLE_PRODUCT_NAME": "Kuyil",
+    "CONSOLE_WORKERS_DEV_SUBDOMAIN": "vijayakrishnan12994",
+    "CONSOLE_API_WORKER_PREFIX": "kuyil-api-edge",
+    "CONSOLE_STORAGE_PREFIX": "kuyil.next",
+    "CONSOLE_SALES_EMAIL": "sales@sourceplane.ai"
+  }
+}

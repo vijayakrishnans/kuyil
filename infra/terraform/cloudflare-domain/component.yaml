@@ -1,0 +1,71 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: cloudflare-domain
+  description: Manages the Cloudflare zone and attaches custom domains to environment-specific Worker services (web-console-next)
+  labels:
+    domain: infra
+    scope: dns-and-custom-domains
+
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+
+  parameters:
+    orgName: sourceplane
+    stackName: cloudflare-domain
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    baseDomain: kuyil.example.com
+    zoneMode: existing
+    workerNamePrefix: kuyil-web-console-next
+    # NOTE: `CONSOLE_CUSTOM_DOMAIN` is intentionally NOT declared here.
+    # It is supplied per-environment via
+    # `environments.{dev,stage,prod}.parameterDefaults.terraform.CONSOLE_CUSTOM_DOMAIN`
+    # in `intent.yaml` (dev: "", stage: stage.kuyil.example.com,
+    # prod: prod.kuyil.example.com) and surfaced to Terraform as
+    # `TF_VAR_CONSOLE_CUSTOM_DOMAIN` by the generic `.parameters` →
+    # `TF_VAR_<key>` loop in the cloudflare-domain-validate job template.
+    # Declaring a default here would shadow the parameterDefault override
+    # and cause the rendered TF_VAR to resolve to the local default ('')
+    # in every environment — exactly the silent-empty failure that
+    # broke Task 0083 (0 added, 0 changed, 0 destroyed). The Terraform
+    # variable itself already defaults to "" in
+    # `terraform/variables.tf`, so absence here is safe for dev.
+
+  dependsOn:
+    - component: web-console-next
+
+  # PARKED — no environment subscriptions, so no jobs are planned. The zone
+  # this stack manages (baseDomain kuyil.example.com) is not delegated to Cloudflare
+  # and does not exist in the connected account (the domain is parked at
+  # dns.ws — a rebrand artifact), so `data.cloudflare_zone.existing` fails
+  # every plan with "no zone found". Restore the subscribe block below once
+  # the zone exists in the account (and finish the 0085b v5 re-import).
+  #
+  # subscribe:
+  #   environments:
+  #     - name: stage
+  #       profile: plan-only
+  #       profileRules:
+  #         - profile: apply
+  #           when:
+  #             triggerRef: github-push-main
+  #
+  #     - name: prod
+  #       profile: plan-only
+  #       profileRules:
+  #         - profile: apply
+  #           when:
+  #             triggerRef: github-push-main
+  subscribe:
+    environments: []
+# ci: trigger full-component verification (orun v2.12.0 upgrade — PR #183)
