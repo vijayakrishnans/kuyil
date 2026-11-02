@@ -1,0 +1,35 @@
+node_modules/
+dist/
+.wrangler/
+.turbo/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+*.log
+plan.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+.workspace/
+
+# orun per-job staged workspaces
+.orun/runs/
+.orun/*
+
+# BF6: rendered wrangler configs for wiring-templated workers (api-edge pilot)
+apps/api-edge/wrangler.jsonc
+apps/config-worker/wrangler.jsonc
+apps/events-worker/wrangler.jsonc
+apps/membership-worker/wrangler.jsonc
+apps/projects-worker/wrangler.jsonc
+apps/identity-worker/wrangler.jsonc
+apps/billing-worker/wrangler.jsonc
+apps/metering-worker/wrangler.jsonc
+apps/notifications-worker/wrangler.jsonc
+apps/admin-worker/wrangler.jsonc
+apps/integrations-worker/wrangler.jsonc
+apps/webhooks-worker/wrangler.jsonc
