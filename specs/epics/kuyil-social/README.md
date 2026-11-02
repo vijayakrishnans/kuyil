@@ -29,7 +29,7 @@ Kuyil (Malayalam for the koel, a songbird) launches as "own your audience, get p
 | Milestone | What it lands | Done when |
 |---|---|---|
 | KY0 — the spec | this doc set | merged, and the epic shows its milestones |
-| KY1 — social core | the patch's worker, schema and ledger, restored and renamed | `/v1/social/health` answers on stage and prod; unit and 42 end-to-end checks pass |
+| KY1 — social core | the patch's worker, schema and ledger, restored and renamed | `/v1/social/health` answers on stage and prod; unit and end-to-end checks pass |
 | KY2 — the timeline app | sign-in, handle, post, reply, thread, profile, follow | a new user signs in and posts on stage and prod in a browser |
 | KY3 — your feeds and filters | feed tabs, filters, "why am I seeing this", community curations | a reader publishes a filter and a second reader subscribes to it |
 | KY4 — play-money wallet | wallet, tips, subscriptions, paywalls, reply deposits, human check | every money flow works in the browser on stage, and the ledger audit returns no rows |

@@ -57,7 +57,8 @@ export type RouteFamily =
   | "billing"
   | "audit"
   | "notifications"
-  | "integrations";
+  | "integrations"
+  | "social";
 
 interface BucketLimits {
   /** Bucket capacity (max tokens). */
@@ -95,6 +96,12 @@ const LIMITS: Record<RouteFamily, FamilyConfig> = {
   config: {
     identity: { limit: 60, windowSec: 60 },
     org: { limit: 300, windowSec: 60 },
+  },
+  // Kuyil: feeds are read-heavy and scrolled; writes are also money-gated
+  // (reply deposits), so the per-identity bucket can be generous.
+  social: {
+    identity: { limit: 240, windowSec: 60 },
+    org: { limit: 600, windowSec: 60 },
   },
   webhooks: {
     identity: { limit: 60, windowSec: 60 },

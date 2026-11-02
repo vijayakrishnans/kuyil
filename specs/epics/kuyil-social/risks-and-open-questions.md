@@ -2,7 +2,7 @@
 
 ## KY-A — The patch only exists as a lossy PDF (RISK, mitigated)
 
-The original branch is not on this machine or GitHub. The PDF lost line breaks and corrupted seven expressions containing `$`: a doc comment, two `whyText` strings, `encodeCursor`, `cursorClause`, `activeSubscriptions` and the test `moduleNameMapper`. `git apply` cannot use it, so the files are rebuilt by hand. The tests and the 42 end-to-end checks are the proof, and all of them must pass again before KY1 lands.
+The original branch is not on this machine or GitHub. The PDF lost line breaks and corrupted seven expressions containing `$`: a doc comment, two `whyText` strings, `encodeCursor`, `cursorClause`, `activeSubscriptions` and the test `moduleNameMapper`. `git apply` cannot use it, so the files are rebuilt by hand. The tests and the end-to-end checks are the proof, and all of them must pass again before KY1 lands.
 
 ## KY-B — Real money and the operating entity (RISK, open)
 

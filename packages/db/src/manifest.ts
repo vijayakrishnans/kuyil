@@ -183,5 +183,23 @@ export const manifest: MigrationManifest = {
       description:
         "Connection pointer on the inbound-delivery inbox (nullable connection_id + partial index) — lets the per-connection delivery log scope precisely; attributed by the IG2 cron drain",
     },
+    {
+      id: "200_social_core",
+      context: "social",
+      path: "200_social_core/up.sql",
+      checksum:
+        "d53430f32639c619e08dbd9af4055346613a61ff5166fa427b4397684879e8e1",
+      description:
+        "Kuyil social foundation — profiles, posts, follow graph, curations (community feeds and filters) with per-user access and preferences, and the legal-only report queue",
+    },
+    {
+      id: "210_wallet_ledger",
+      context: "wallet",
+      path: "210_wallet_ledger/up.sql",
+      checksum:
+        "5282f49cf76cb9cb326c8ccb21a5ec7bc4256e4b9f40ed456128f20942f94958",
+      description:
+        "Kuyil wallet — double-entry ledger (accounts, transfers, append-only postings that must sum to zero, non-negative user balances), reply deposits in escrow, and creator subscriptions",
+    },
   ],
 };

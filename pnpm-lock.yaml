@@ -333,6 +333,28 @@ importers:
         specifier: ^4.14.4
         version: 4.156.1(@cloudflare/workers-types@4.20260702.1)
 
+  apps/social-worker:
+    dependencies:
+      '@saas/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250508.0
+        version: 4.20260702.1
+      '@saas/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@saas/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+      wrangler:
+        specifier: ^4.14.4
+        version: 4.156.1(@cloudflare/workers-types@4.20260702.1)
+
   apps/web-console-next:
     dependencies:
       '@hookform/resolvers':
@@ -1148,6 +1170,37 @@ importers:
       '@saas/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250508.0
+        version: 4.20260702.1
+      '@saas/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@saas/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      '@types/node':
+        specifier: ^20.17.0
+        version: 20.19.43
+      jest:
+        specifier: ^29.7.0
+        version: 29.7.0(@types/node@20.19.43)
+      ts-jest:
+        specifier: ^29.3.4
+        version: 29.4.15(@babel/core@7.29.7)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.29.7))(jest-util@29.7.0)(jest@29.7.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
+  tests/social-worker:
+    dependencies:
+      '@saas/db':
+        specifier: workspace:*
+        version: link:../../packages/db
     devDependencies:
       '@cloudflare/workers-types':
         specifier: ^4.20250508.0
@@ -10347,7 +10400,7 @@ snapshots:
       eslint: 9.39.4(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@1.21.7))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.4(jiti@1.21.7))
       eslint-plugin-react: 7.37.5(eslint@9.39.4(jiti@1.21.7))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.4(jiti@1.21.7))
@@ -10377,7 +10430,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.13.0
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@1.21.7))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7))
     transitivePeerDependencies:
       - supports-color
 
@@ -10392,7 +10445,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.4(jiti@1.21.7)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.59.2(eslint@9.39.4(jiti@1.21.7))(typescript@5.9.3))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7)))(eslint@9.39.4(jiti@1.21.7)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.2.0

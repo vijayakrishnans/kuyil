@@ -17,7 +17,7 @@ Restore the patch from the PDF export: rebuild its line breaks and the seven exp
 **Done when**
 - `GET /v1/social/health` reports `db: true` on stage and prod
 - both migrations applied on stage and prod
-- the unit tests pass, and the 42 end-to-end checks pass against a real Postgres, including money conservation
+- the unit tests pass, and all end-to-end checks pass against a real Postgres, including money conservation
 - a prod reply to a stranger succeeds with no deposit
 
 ## KY2 — the timeline app

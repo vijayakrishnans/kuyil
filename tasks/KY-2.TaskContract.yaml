@@ -1,0 +1,27 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-2
+  title: "KY1: social core"
+spec:
+  goal: Kuyil's social and wallet API runs behind api-edge on stage and prod, restored from the earlier patch and proven by its tests.
+  affects:
+    - default/kuyil/social-worker
+    - default/kuyil/social-worker-tests
+    - default/kuyil/api-edge
+    - default/kuyil/db
+    - default/kuyil/db-tests
+    - apps/social-worker/**
+    - tests/social-worker/**
+    - tests/db/**
+    - apps/api-edge/**
+    - packages/db/**
+    - pnpm-lock.yaml
+    - specs/epics/kuyil-social/**
+    - tasks/**
+  doneWhen:
+    - GET /v1/social/health reports db true on stage and prod.
+    - Both migrations are applied on stage and prod.
+    - Unit tests and the end-to-end checks pass against a real Postgres.
+    - A prod reply to a stranger succeeds with no deposit.
+  gates: []
