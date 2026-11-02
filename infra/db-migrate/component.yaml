@@ -1,0 +1,66 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: db-migrate
+  description: Applies database migrations to stage and prod Supabase instances
+  labels:
+    domain: infra
+    scope: database
+    team: platform
+    layer: data
+
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: db-migrate
+  lifecycle: production
+  owner: platform
+  domain: infra
+
+  dependsOn:
+    - component: db
+    # Migrations read the Supabase connection from the orun secrets the
+    # `supabase` component lease-publishes post-apply.
+    - component: supabase
+
+  path: packages/db/src/migrations
+
+  parameters:
+    nodeVersion: "20"
+    pnpmVersion: "10.12.1"
+    owner: sourceplane
+    repo: kuyil
+
+  # The migration runner's Management-API token (required in apply mode)
+  # resolves from orun secrets — minted fresh per run from the Supabase
+  # integration (management-access template). Replaces the ambient
+  # SUPABASE_ACCESS_TOKEN CI value.
+  secretEnv:
+    SUPABASE_ACCESS_TOKEN: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_ACCESS_TOKEN"
+    # The runner's DB identity (de-AWS — replaces the Secrets Manager read).
+    SUPABASE_PROJECT_REF: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_PROJECT_REF"
+    SUPABASE_DB_PASSWORD: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_DB_PASSWORD"
+    SUPABASE_DB_URL: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_DB_URL"
+
+  subscribe:
+    environments:
+      - name: stage
+        profile: plan
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        profile: plan
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+# ci: re-trigger deploy (batch A — runner-starvation recovery 20260622T115650Z)
+# ci: re-trigger deploy (batch A — runner-starvation recovery 20260622T115650Z)
+# ci: re-apply migrations onto the recreated Supabase database (20260821T062704Z)
+# orun: redeploy 03-infrastructure-database 20261102T075530Z

@@ -1,0 +1,68 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+
+metadata:
+  name: cloudflare-hyperdrive
+  description: Provisions Cloudflare Hyperdrive resources for stage and prod Supabase Postgres databases
+  labels:
+    domain: infra
+    scope: runtime-database-gateway
+
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: terraform
+  lifecycle: production
+  owner: platform
+  domain: infra
+
+  # Hyperdrive's origin is the Supabase Postgres connection that `supabase`
+  # writes to AWS Secrets Manager; it must run after that secret exists.
+  dependsOn:
+    - component: supabase
+
+  parameters:
+    orgName: sourceplane
+    stackName: cloudflare-hyperdrive
+    terraformDir: terraform
+    terraformVersion: "1.15.3"
+    # SEC-JOB: the wiring document (hyperdrive id/name) is lease-published
+    # post-apply; worker deploys read it back as WIRING_CLOUDFLARE_HYPERDRIVE_<ENV>.
+    secretOutputs: "WIRING_CLOUDFLARE_HYPERDRIVE=wiring"
+
+  # All three values resolve from orun secrets (project rung, brokered from
+  # the Cloudflare integration): the provider credential is minted fresh per
+  # run from the hyperdrive-edit template (Workers Hyperdrive Write — the
+  # workers-deploy token deliberately cannot touch Hyperdrive), and the
+  # account id is a non-secret connection fact (account-id template).
+  # Component-level because plan-only lanes refresh against the live API too.
+  secretEnv:
+    CLOUDFLARE_API_TOKEN: "secret://ws_0014GSP6/kuyil/{{ .environment }}/CLOUDFLARE_HYPERDRIVE_TOKEN"
+    CLOUDFLARE_ACCOUNT_ID: "secret://ws_0014GSP6/kuyil/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
+    TF_VAR_cloudflare_account_id: "secret://ws_0014GSP6/kuyil/{{ .environment }}/CLOUDFLARE_ACCOUNT_ID"
+    # Supabase origin, lease-published by the supabase component's
+    # secretOutputs — the replacement for the Secrets Manager data source.
+    TF_VAR_supabase_project_ref: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_PROJECT_REF"
+    TF_VAR_supabase_db_password: "secret://ws_0014GSP6/kuyil/{{ .environment }}/SUPABASE_DB_PASSWORD"
+
+  subscribe:
+    environments:
+      - name: stage
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+
+      - name: prod
+        profile: plan-only
+        profileRules:
+          - profile: apply
+            when:
+              triggerRef: github-push-main
+# ci: trigger convergence — first-boot infra bring-up (hyperdrive stage/prod)
+# ci: re-apply hyperdrive against the recreated Supabase origin (20260821T061640Z)
+# orun: redeploy 03-infrastructure-database 20261102T075530Z
