@@ -1,0 +1,68 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: kuyil-web
+  description: Kuyil's public app — static pages plus a same-origin pass-through to api-edge
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  path: apps/kuyil-web
+  dependsOn:
+    # policy-worker's pre-deploy places a placeholder for every binding target,
+    # so this can bind to api-edge on its first deploy.
+    - component: policy-worker
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: api-edge
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        dependencyMode: advisory
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        dependencyMode: advisory
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ../..
+    appDir: .
+    orgName: sourceplane
+    owner: sourceplane
+    repo: kuyil
+
+    turboFilter: "@saas/kuyil-web"
+    wranglerConfig: wrangler.jsonc
+    installCommand: pnpm install --frozen-lockfile
+    buildCommand: pnpm exec turbo run build --filter=@saas/kuyil-web
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@saas/kuyil-web
+    dryRunCommand: pnpm exec wrangler deploy --dry-run --config wrangler.jsonc --env prod
+    deployCommand: pnpm exec wrangler deploy --config wrangler.jsonc --env prod
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'No smoke test configured.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: web
+    runtime: cloudflare

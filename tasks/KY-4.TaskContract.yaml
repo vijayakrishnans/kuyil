@@ -1,0 +1,20 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-4
+  title: "KY2: the timeline app"
+spec:
+  goal: People can sign in, pick a handle, post, reply, read threads and profiles, and follow, in a public web app.
+  affects:
+    - default/kuyil/kuyil-web
+    - default/kuyil/kuyil-web-tests
+    - apps/kuyil-web/**
+    - tests/kuyil-web/**
+    - pnpm-lock.yaml
+    - .gitignore
+    - tasks/**
+  doneWhen:
+    - A new user signs in, picks a handle, posts and replies in a browser on stage.
+    - A signed-out visitor can read Everything, a thread and a profile.
+    - It works at phone width.
+  gates: []
