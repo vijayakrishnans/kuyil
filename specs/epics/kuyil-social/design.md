@@ -46,7 +46,7 @@ New in this epic: `REPLY_DEPOSITS_ENABLED`. Prod has no way to add money, so a r
 
 ## 3. The surfaces
 
-`apps/kuyil-web` is a new public app, built in the baseline's Next.js stack and deployed to Workers.
+`apps/kuyil-web` is a new public app: a small Worker serving static modules, with `/v1/*` passed to `api-edge`. See `IMPLEMENTATION-STATUS.md` for why this is not Next.js.
 
 - Home: feed tabs, composer, posts with collapsed filter verdicts ("show anyway") and "why am I seeing this"
 - Thread and profile pages, readable without signing in

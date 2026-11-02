@@ -2,7 +2,7 @@
 
 Milestones land in order. Each is one or more tasks, each task one pull request. A milestone is marked ✅ here when its "done when" list is true, and recorded in `IMPLEMENTATION-STATUS.md`.
 
-## KY0 — the spec
+## KY0 — the spec ✅
 
 This doc set, merged to `main`.
 
@@ -29,7 +29,7 @@ Restore the patch from the PDF export: rebuild its line breaks and the seven exp
 - a signed-out visitor can read Everything, a thread and a profile
 - it works at phone width
 
-## KY3 — your feeds and filters
+## KY3 — your feeds and filters ✅
 
 Feed tabs including Hot and Brand-safe, built-in and community filters, "show anyway", "why am I seeing this", publishing curations.
 
@@ -38,7 +38,7 @@ Feed tabs including Hot and Brand-safe, built-in and community filters, "show an
 - Hot's explanation shows that post's real numbers
 - one user publishes a filter and a second user subscribes and sees it apply
 
-## KY4 — play-money wallet
+## KY4 — play-money wallet ✅
 
 Wallet, tips, creator subscriptions, subscriber-only posts, paid curations, reply deposits, human check. Clearly labelled test money, on stage only.
 
@@ -47,7 +47,7 @@ Wallet, tips, creator subscriptions, subscriber-only posts, paid curations, repl
 - the ledger audit query returns no rows
 - no prod route can add money
 
-## KY5 — trust and exit
+## KY5 — trust and exit ✅
 
 Legal report queue, follower and post export, economics page, public landing page.
 
