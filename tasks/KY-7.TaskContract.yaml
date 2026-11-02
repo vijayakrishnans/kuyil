@@ -1,0 +1,15 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-7
+  title: "KY4: play-money wallet"
+spec:
+  goal: Every money flow works with test money on stage, and no money UI appears in prod.
+  affects:
+    - default/kuyil/kuyil-web
+    - apps/kuyil-web/**
+    - tasks/**
+  doneWhen:
+    - Top up, tip, subscribe, unlock, buy a feed, and hold and settle a deposit work on stage.
+    - No prod route can add money.
+  gates: []
