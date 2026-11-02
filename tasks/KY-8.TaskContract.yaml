@@ -1,0 +1,17 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-8
+  title: "KY5: trust and exit"
+spec:
+  goal: People can report illegal content, admins can resolve reports, and users can take their audience with them.
+  affects:
+    - default/kuyil/kuyil-web
+    - apps/kuyil-web/**
+    - default/kuyil/social-worker
+    - apps/social-worker/**
+    - tasks/**
+  doneWhen:
+    - A report reaches the queue, an admin resolves it, and the removed post returns 404.
+    - A user downloads an export of followers and posts.
+  gates: []
