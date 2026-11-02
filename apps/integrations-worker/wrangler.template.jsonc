@@ -1,0 +1,105 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "kuyil-integrations-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  // Free plan caps a Worker at 3MB gzipped (10MB on paid) — minify fleet-wide
+  // so the ceiling is never the thing that blocks a deploy.
+  "minify": true,
+  "vars": {
+    // Free-tier profile (specs/profiles/free-tier.md): "true" shrinks each
+    // scheduled pass to fit the Workers Free plan's 10ms CPU / 50-subrequest
+    // invocation ceiling. Default "false" = the paid baseline.
+    "FREE_TIER": "false",
+    "ENVIRONMENT": "local"
+  },
+  // Cron budget (free plan: 5 triggers per ACCOUNT, across every worker AND
+  // every environment). Triggers are declared per-environment, in `prod` only:
+  // a top-level `triggers` block is inherited by stage and prod alike, which is
+  // what put this account at 6/5. See specs/profiles/free-tier.md.
+  "env": {
+    "dev": {
+      "vars": {
+        "FREE_TIER": "false",
+        "ENVIRONMENT": "dev"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": {
+        "FREE_TIER": "false",
+        "ENVIRONMENT": "stage"
+        // Secrets (set via `wrangler secret put <NAME> --env stage` once the
+        // GitHub App for stage is registered — saas-integrations D1):
+        //   SECRET_ENCRYPTION_KEY, INTEGRATIONS_STATE_SECRET,
+        //   GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_APP_WEBHOOK_SECRET,
+        //   GITHUB_APP_CLIENT_ID, GITHUB_APP_CLIENT_SECRET, GITHUB_APP_SLUG
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-stage"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-stage"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "kuyil-billing-worker-stage"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "kuyil-projects-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      // Inbox drain (IG2): attribute -> normalize -> emit, every minute --
+      // same cadence as the outbound webhooks dispatcher.
+      "triggers": {
+        "crons": ["* * * * *"]
+      },
+      "vars": {
+        "FREE_TIER": "false",
+        "ENVIRONMENT": "prod"
+        // Secrets: same set as stage, via `wrangler secret put <NAME> --env prod`
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-prod"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-prod"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "kuyil-billing-worker-prod"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "kuyil-projects-worker-prod"
+        }
+      ]
+    }
+  }
+}

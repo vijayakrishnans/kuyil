@@ -1,0 +1,107 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "kuyil-identity-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  // Free plan caps a Worker at 3MB gzipped (10MB on paid) — minify fleet-wide
+  // so the ceiling is never the thing that blocks a deploy.
+  "minify": true,
+  // OAuth (B1) configuration:
+  //   - Non-secret vars are declared per-env below. Replace the empty
+  //     {GITHUB,GOOGLE}_OAUTH_CLIENT_ID placeholders with the client id of the
+  //     OAuth app registered for that provider + environment.
+  //   - Secrets are NEVER stored here. Set them with:
+  //       wrangler secret put GITHUB_OAUTH_CLIENT_SECRET --env <env>
+  //       wrangler secret put GOOGLE_OAUTH_CLIENT_SECRET --env <env>
+  //       wrangler secret put OAUTH_STATE_SECRET         --env <env>
+  //   - Each OAuth app's authorized redirect/callback URL must be:
+  //       {OAUTH_REDIRECT_BASE_URL}/v1/auth/oauth/{github|google}/callback
+  "vars": {
+    "ENVIRONMENT": "local",
+    "DEBUG_DELIVERY": "true",
+    "GITHUB_OAUTH_CLIENT_ID": "",
+    "GOOGLE_OAUTH_CLIENT_ID": "",
+    "OAUTH_REDIRECT_BASE_URL": "http://localhost:8787",
+    "OAUTH_ALLOWED_CONSOLE_ORIGINS": "http://localhost:3000",
+    "SOLO_MODE": "true"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "DEBUG_DELIVERY": "true",
+        "GITHUB_OAUTH_CLIENT_ID": "",
+        "GOOGLE_OAUTH_CLIENT_ID": "",
+        "OAUTH_REDIRECT_BASE_URL": "",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://kuyil-web-console-next-dev.vijayakrishnan12994.workers.dev",
+        "SOLO_MODE": "true"
+      }
+    },
+    "stage": {
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "DEBUG_DELIVERY": "true",
+        "GITHUB_OAUTH_CLIENT_ID": "Ov23liKBsjAqJJsmBavV",
+        "GOOGLE_OAUTH_CLIENT_ID": "441163126775-7fabhvpbl9tsga921rklpdlde7mduq34.apps.googleusercontent.com",
+        "OAUTH_REDIRECT_BASE_URL": "https://kuyil-api-edge-stage.vijayakrishnan12994.workers.dev",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://stage.kuyil.example.com,https://kuyil-web-console-next-stage.vijayakrishnan12994.workers.dev",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-stage"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-stage"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "kuyil-notifications-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "DEBUG_DELIVERY": "false",
+        "GITHUB_OAUTH_CLIENT_ID": "Ov23lilp2aoyeBDVU8Vc",
+        "GOOGLE_OAUTH_CLIENT_ID": "441163126775-7fabhvpbl9tsga921rklpdlde7mduq34.apps.googleusercontent.com",
+        "OAUTH_REDIRECT_BASE_URL": "https://kuyil-api-edge-prod.vijayakrishnan12994.workers.dev",
+        "OAUTH_ALLOWED_CONSOLE_ORIGINS": "https://prod.kuyil.example.com,https://kuyil-web-console-next-prod.vijayakrishnan12994.workers.dev",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-prod"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-prod"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "kuyil-notifications-worker-prod"
+        }
+      ]
+    }
+  }
+}
