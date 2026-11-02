@@ -1,0 +1,183 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "kuyil-api-edge",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  // Free plan caps a Worker at 3MB gzipped (10MB on paid) — minify fleet-wide
+  // so the ceiling is never the thing that blocks a deploy.
+  "minify": true,
+  "vars": {
+    "ENVIRONMENT": "local",
+    "CONSOLE_CUSTOM_DOMAIN": "",
+    // M0 / Solo profile (Kuyil ships single-user). Set "false" to restore the
+    // full multi-tenant baseline. See specs/profiles/solo-m0.md.
+    "SOLO_MODE": "true"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+  ],
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "CONSOLE_CUSTOM_DOMAIN": "",
+        "SOLO_MODE": "true"
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    },
+    "stage": {
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "CONSOLE_CUSTOM_DOMAIN": "stage.kuyil.example.com",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "@@wiring(cloudflare-kv/stage:api_edge_idempotency_kv_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "IDENTITY_WORKER",
+          "service": "kuyil-identity-worker-stage"
+        },
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-stage"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "kuyil-projects-worker-stage"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "kuyil-events-worker-stage"
+        },
+        {
+          "binding": "CONFIG_WORKER",
+          "service": "kuyil-config-worker-stage"
+        },
+        {
+          "binding": "WEBHOOKS_WORKER",
+          "service": "kuyil-webhooks-worker-stage"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "kuyil-metering-worker-stage"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "kuyil-billing-worker-stage"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "kuyil-notifications-worker-stage"
+        },
+        {
+          "binding": "INTEGRATIONS_WORKER",
+          "service": "kuyil-integrations-worker-stage"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    },
+    "prod": {
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "CONSOLE_CUSTOM_DOMAIN": "prod.kuyil.example.com",
+        "SOLO_MODE": "true"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "@@wiring(cloudflare-kv/prod:api_edge_idempotency_kv_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "IDENTITY_WORKER",
+          "service": "kuyil-identity-worker-prod"
+        },
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-prod"
+        },
+        {
+          "binding": "PROJECTS_WORKER",
+          "service": "kuyil-projects-worker-prod"
+        },
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "kuyil-events-worker-prod"
+        },
+        {
+          "binding": "CONFIG_WORKER",
+          "service": "kuyil-config-worker-prod"
+        },
+        {
+          "binding": "WEBHOOKS_WORKER",
+          "service": "kuyil-webhooks-worker-prod"
+        },
+        {
+          "binding": "METERING_WORKER",
+          "service": "kuyil-metering-worker-prod"
+        },
+        {
+          "binding": "BILLING_WORKER",
+          "service": "kuyil-billing-worker-prod"
+        },
+        {
+          "binding": "NOTIFICATIONS_WORKER",
+          "service": "kuyil-notifications-worker-prod"
+        },
+        {
+          "binding": "INTEGRATIONS_WORKER",
+          "service": "kuyil-integrations-worker-prod"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "RATE_LIMITER_DO", "class_name": "RateLimiterDO" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }
+      ]
+    }
+  }
+}
