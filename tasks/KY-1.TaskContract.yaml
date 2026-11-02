@@ -1,0 +1,14 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-1
+  title: "KY0: the Kuyil epic doc set"
+spec:
+  goal: The Kuyil epic doc set and this contract are on main, and their review adopts the design.
+  affects:
+    - specs/epics/kuyil-social/**
+    - tasks/**
+  doneWhen:
+    - The five epic documents are on main.
+    - task_get kuyil-social shows the epic with milestones KY0 to KY5.
+  gates: []
