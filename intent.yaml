@@ -145,7 +145,7 @@ environments:
     activation:
       triggerRefs:
         - github-pull-request
-        # @dev-lanes-deferred:ICAgICAgICAtIGdpdGh1Yi1wdXNoLW1haW4= (tooling/bootstrap/dev-lanes.mjs --restore puts it back)
+        - github-push-main
         - local-development
     parameterDefaults:
       terraform:
@@ -195,7 +195,9 @@ environments:
         - github-pull-request
         - github-push-main
         - github-dispatch
-    # @promotion-deferred:ICAgIHByb21vdGlvbjoKICAgICAgZGVwZW5kc09uOgogICAgICAgIC0gZW52aXJvbm1lbnQ6IHN0YWdl (tooling/bootstrap/promotion.mjs --restore puts it back)
+    promotion:
+      dependsOn:
+        - environment: stage
     parameterDefaults:
       terraform:
         lane: verify
