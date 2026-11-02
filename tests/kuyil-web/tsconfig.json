@@ -1,0 +1,29 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "types": [
+      "jest",
+      "node",
+      "@cloudflare/workers-types"
+    ],
+    "allowSyntheticDefaultImports": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@kuyil-web/*": [
+        "../../apps/kuyil-web/src/*.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../apps/kuyil-web/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

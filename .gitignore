@@ -33,3 +33,4 @@ apps/notifications-worker/wrangler.jsonc
 apps/admin-worker/wrangler.jsonc
 apps/integrations-worker/wrangler.jsonc
 apps/webhooks-worker/wrangler.jsonc
+apps/social-worker/wrangler.jsonc
