@@ -1,0 +1,13 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-9
+  title: "KY5: record the as-built status"
+spec:
+  goal: The epic's status file says what shipped, what was verified, what was not, and what is still open.
+  affects:
+    - specs/epics/kuyil-social/**
+    - tasks/**
+  doneWhen:
+    - IMPLEMENTATION-STATUS.md lists every landed PR, the verification, and the open items.
+  gates: []

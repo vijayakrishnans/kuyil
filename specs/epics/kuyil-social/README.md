@@ -8,7 +8,7 @@ Kuyil (Malayalam for the koel, a songbird) launches as "own your audience, get p
 
 | Field | Value |
 |-------|-------|
-| Status | Draft |
+| Status | In progress: live on stage; prod is read-only until sign-in works |
 | Cluster | **KY** (KY0–KY5) |
 | Owner(s) | `apps/social-worker` (the resource) · `packages/db` (`social`, `wallet`) · `apps/api-edge` (the facade) · `apps/kuyil-web` (the surface) |
 | Builds on | `lumen baseline-v32` — identity, sessions, api-edge, rate limiting, audit, Hyperdrive to Supabase Postgres |
