@@ -1,0 +1,30 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: projects-worker-tests
+  description: Verification suite for `projects-worker` — build, typecheck and its own tests, run on every plan that includes it.
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  domain: starter-tests
+  path: tests/projects-worker
+  subscribe:
+    environments:
+      - name: dev
+        profile: quick-check
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+    preBuildCommand: pnpm exec turbo run test --filter=./
+  labels:
+    team: platform
+    layer: test
+# ci: trigger full-component verification (orun v2.12.0 upgrade — PR #183)

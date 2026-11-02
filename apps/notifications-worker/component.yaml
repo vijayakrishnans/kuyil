@@ -1,0 +1,99 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: notifications-worker
+  description: Cloudflare Worker for the Notifications bounded context
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: cloudflare-worker-turbo
+  lifecycle: production
+  owner: platform
+  domain: starter-runtime
+  path: apps/notifications-worker
+  dependsOn:
+    # ENFORCED ON MAIN: the data plane before anything that reads its wiring,
+    # and policy-worker before anything that holds a service binding — its
+    # pre-deploy creates a placeholder for every binding target that does not
+    # exist yet (tooling/deploy/fleet-stubs.mjs), so each worker's first
+    # deploy can carry its full bindings. Peer edges stay advisory: they are
+    # runtime calls, not deploy order. A pull request deploys nothing, so
+    # nothing on one waits.
+    - component: policy-worker
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+    - component: events-worker
+    - component: db-migrate
+    # Shared workspace packages this component BUNDLES. Declared so a change
+    # to one marks this component changed and redeploys it — without the
+    # edge, `orun plan --changed` keys on `path:` alone and a worker can run
+    # a months-old copy of a package that has since changed underneath it.
+    - component: contracts
+    - component: db
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        # wire-live (deploy profile) is the only reader, and dev never
+        # deploys — scoping keeps dev jobs from requiring stage+prod
+        # credentials they can never use. See specs/profiles/free-tier.md.
+        secretEnv:
+          WIRING_CLOUDFLARE_HYPERDRIVE_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_HYPERDRIVE_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_HYPERDRIVE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        # wire-live (deploy profile) is the only reader, and dev never
+        # deploys — scoping keeps dev jobs from requiring stage+prod
+        # credentials they can never use. See specs/profiles/free-tier.md.
+        secretEnv:
+          WIRING_CLOUDFLARE_HYPERDRIVE_STAGE: "secret://ws_0014GSP6/kuyil/stage/WIRING_CLOUDFLARE_HYPERDRIVE"
+          WIRING_CLOUDFLARE_HYPERDRIVE_PROD: "secret://ws_0014GSP6/kuyil/prod/WIRING_CLOUDFLARE_HYPERDRIVE"
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+    workspaceDir: ../..
+    appDir: .
+    # BF6b: deploy-time wiring — wrangler.jsonc is rendered, never committed.
+    # Verify lanes render from wiring.fixture.json (offline); deploy lanes
+    # resolve real IDs from the Secrets Manager wiring manifest (BF5).
+    orgName: sourceplane
+    owner: sourceplane
+    repo: kuyil
+
+    turboFilter: "@saas/notifications-worker"
+    wranglerConfig: wrangler.jsonc
+    wranglerTemplate: wrangler.template.jsonc
+    wiringComponents: "cloudflare-hyperdrive"
+    wiringEnvs: "stage,prod"
+    wiringFixture: wiring.fixture.json
+    installCommand: pnpm install --frozen-lockfile
+    buildCommand: pnpm exec turbo run build --filter=@saas/notifications-worker
+    typecheckCommand: pnpm exec turbo run typecheck --filter=@saas/notifications-worker
+    dryRunCommand: pnpm exec wrangler deploy --dry-run --config wrangler.jsonc --env prod
+    deployCommand: pnpm exec wrangler deploy --config wrangler.jsonc --env prod
+    preDeployCommand: "echo 'No pre-deploy step configured.'"
+    migrationCommand: "echo 'No migrations configured.'"
+    smokeCommand: "echo 'Internal-only worker; no public smoke endpoint.'"
+  labels:
+    team: platform
+    layer: runtime
+    surface: notifications
+    runtime: cloudflare
+# ci: re-trigger deploy (verify orun-secrets brokered CLOUDFLARE_API_TOKEN resolve in worker deploy lane, 20260727T153639Z)
+# orun: redeploy 04-workers 20261102T075852Z

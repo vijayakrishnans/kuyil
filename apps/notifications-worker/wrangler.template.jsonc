@@ -1,0 +1,86 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "kuyil-notifications-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  // Free plan caps a Worker at 3MB gzipped (10MB on paid) — minify fleet-wide
+  // so the ceiling is never the thing that blocks a deploy.
+  "minify": true,
+  "vars": {
+    "ENVIRONMENT": "local",
+    "NOTIFICATIONS_PROVIDER": "local-debug",
+    "DEBUG_DELIVERY": "true"
+  },
+  "env": {
+    "dev": {
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "NOTIFICATIONS_PROVIDER": "local-debug",
+        "DEBUG_DELIVERY": "true"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      // cloudflare-email sends through the Email Service `send_email` binding.
+      // One-time account prerequisites before real delivery works: Workers
+      // Paid plan, sending domain verified in Email Service (DKIM/SPF), and
+      // EMAIL_FROM_ADDRESS on that verified domain. Until then the worker
+      // still deploys; failed sends surface as notification.failed events.
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "NOTIFICATIONS_PROVIDER": "cloudflare-email",
+        "DEBUG_DELIVERY": "true",
+        "EMAIL_FROM_ADDRESS": "no-reply@mail.kuyil.example.com",
+        "EMAIL_FROM_NAME": "Kuyil"
+      },
+      "send_email": [
+        {
+          "name": "EMAIL"
+        }
+      ],
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "kuyil-events-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "NOTIFICATIONS_PROVIDER": "cloudflare-email",
+        "DEBUG_DELIVERY": "false",
+        "EMAIL_FROM_ADDRESS": "no-reply@mail.kuyil.example.com",
+        "EMAIL_FROM_NAME": "Kuyil"
+      },
+      "send_email": [
+        {
+          "name": "EMAIL"
+        }
+      ],
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "EVENTS_WORKER",
+          "service": "kuyil-events-worker-prod"
+        }
+      ]
+    }
+  }
+}

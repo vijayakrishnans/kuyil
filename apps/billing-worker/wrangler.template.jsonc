@@ -1,0 +1,90 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved from AWS Secrets Manager at deploy time (wire-live) or from the
+// committed wiring.fixture.json for offline dry-runs (wire-fixture).
+{
+  "name": "kuyil-billing-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  // Free plan caps a Worker at 3MB gzipped (10MB on paid) — minify fleet-wide
+  // so the ceiling is never the thing that blocks a deploy.
+  "minify": true,
+  "workers_dev": false,
+  // Billing provider (epic saas-multi-org-billing / billing-provider-abstraction):
+  //   - Non-secret config is per-env `vars` below (BILLING_PROVIDER, POLAR_SERVER).
+  //   - Secrets are NEVER stored here. Set them per env with:
+  //       wrangler secret put POLAR_ACCESS_TOKEN  --env <env>
+  //       wrangler secret put POLAR_WEBHOOK_SECRET --env <env>
+  //   - POLAR_PRODUCT_MAP (plan code → Polar product id) is set per env.
+  //   - POLAR_SUCCESS_URL is the FALLBACK post-checkout return (console root) for
+  //     callers that don't supply embedOrigin+returnPath; the console always does,
+  //     so the buyer normally returns to its own billing page.
+  "vars": {
+    "ENVIRONMENT": "local",
+    "BILLING_PROVIDER": "polar",
+    "POLAR_SERVER": "sandbox"
+  },
+  "env": {
+    "dev": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "dev",
+        "BILLING_PROVIDER": "polar",
+        "POLAR_SERVER": "sandbox"
+      }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "stage",
+        "BILLING_PROVIDER": "polar",
+        "POLAR_SERVER": "sandbox",
+        "POLAR_PRODUCT_MAP": "{\"pro\":\"c3e33c12-1ec6-4843-aed1-10b21c6fcb4f\",\"business\":\"aefd7468-6f9f-4ebc-b373-31c852b9842a\"}",
+        "POLAR_SUCCESS_URL": "https://stage.kuyil.example.com/"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-stage"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-stage"
+        }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "prod",
+        "BILLING_PROVIDER": "polar",
+        "POLAR_SERVER": "production",
+        "POLAR_PRODUCT_MAP": "{\"pro\":\"c711fc4c-74e2-47f5-991e-b940df833899\",\"business\":\"e2ba3e96-b97a-4348-82ef-87bcebad1d17\"}",
+        "POLAR_SUCCESS_URL": "https://prod.kuyil.example.com/"
+      },
+      "hyperdrive": [
+        {
+          "binding": "PLATFORM_DB",
+          "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@"
+        }
+      ],
+      "services": [
+        {
+          "binding": "MEMBERSHIP_WORKER",
+          "service": "kuyil-membership-worker-prod"
+        },
+        {
+          "binding": "POLICY_WORKER",
+          "service": "kuyil-policy-worker-prod"
+        }
+      ]
+    }
+  }
+}
