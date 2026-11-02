@@ -50,6 +50,7 @@ spec:
     - component: membership-worker
     - component: metering-worker
     - component: notifications-worker
+    - component: social-worker
     # Shared workspace packages this component BUNDLES. Declared so a change
     # to one marks this component changed and redeploys it — without the
     # edge, `orun plan --changed` keys on `path:` alone and a worker can run

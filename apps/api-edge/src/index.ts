@@ -8,6 +8,7 @@ import { isOrgRoute, handleOrgRoute } from "./org-facade";
 import { isProjectRoute, handleProjectRoute } from "./project-facade";
 import { isAuditRoute, handleAuditRoute } from "./audit-facade";
 import { isConfigRoute, handleConfigRoute } from "./config-facade";
+import { isSocialRoute, handleSocialRoute } from "./social-facade";
 import { isWebhooksRoute, handleWebhooksRoute } from "./webhooks-facade";
 import { isMeteringRoute, handleMeteringRoute } from "./metering-facade";
 import { isBillingRoute, handleBillingRoute } from "./billing-facade";
@@ -50,6 +51,8 @@ export default {
       response = await handleAuditRoute(request, env, requestId, url.pathname);
     } else if (isConfigRoute(url.pathname)) {
       response = await handleConfigRoute(request, env, requestId, url.pathname);
+    } else if (isSocialRoute(url.pathname)) {
+      response = await handleSocialRoute(request, env, requestId, url.pathname);
     } else if (isIntegrationsIngressRoute(url.pathname)) {
       // Public install-callback ingress (no session) — authenticated by the
       // signed single-use state verified in integrations-worker.

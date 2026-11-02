@@ -1,0 +1,41 @@
+// Rendered to wrangler.jsonc by tooling/wire/render.mjs (BF6 deploy-time wiring).
+// Resource IDs are NEVER committed: @@wiring(<component>/<env>:<key>)@@ tokens are
+// resolved at deploy time (wire-live) or from wiring.fixture.json (wire-fixture).
+//
+// social-worker owns two bounded contexts — `social` and `wallet` — in one
+// service on purpose: a reply and the deposit it holds, or a purchase and the
+// access it grants, must commit in ONE Postgres transaction.
+{
+  "name": "kuyil-social-worker",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  "minify": true,
+  "vars": {
+    "ENVIRONMENT": "local",
+    "SOCIAL_ADMINS": "",
+    "REPLY_DEPOSITS_ENABLED": "true"
+  },
+  "env": {
+    "dev": {
+      "vars": { "ENVIRONMENT": "dev", "SOCIAL_ADMINS": "", "REPLY_DEPOSITS_ENABLED": "true" }
+    },
+    "stage": {
+      "workers_dev": false,
+      "vars": { "ENVIRONMENT": "stage", "SOCIAL_ADMINS": "", "REPLY_DEPOSITS_ENABLED": "true" },
+      // Refund reply deposits nobody acted on within 24h.
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "hyperdrive": [
+        { "binding": "PLATFORM_DB", "id": "@@wiring(cloudflare-hyperdrive/stage:hyperdrive_id)@@" }
+      ]
+    },
+    "prod": {
+      "workers_dev": false,
+      "vars": { "ENVIRONMENT": "prod", "SOCIAL_ADMINS": "", "REPLY_DEPOSITS_ENABLED": "false" },
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "hyperdrive": [
+        { "binding": "PLATFORM_DB", "id": "@@wiring(cloudflare-hyperdrive/prod:hyperdrive_id)@@" }
+      ]
+    }
+  }
+}

@@ -81,6 +81,10 @@
           "service": "kuyil-config-worker-stage"
         },
         {
+          "binding": "SOCIAL_WORKER",
+          "service": "kuyil-social-worker-stage"
+        },
+        {
           "binding": "WEBHOOKS_WORKER",
           "service": "kuyil-webhooks-worker-stage"
         },
@@ -148,6 +152,10 @@
         {
           "binding": "CONFIG_WORKER",
           "service": "kuyil-config-worker-prod"
+        },
+        {
+          "binding": "SOCIAL_WORKER",
+          "service": "kuyil-social-worker-prod"
         },
         {
           "binding": "WEBHOOKS_WORKER",

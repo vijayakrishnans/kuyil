@@ -20,6 +20,8 @@
     "./notifications": "./src/notifications/index.ts",
     "./support": "./src/support/index.ts",
     "./integrations": "./src/integrations/index.ts",
+    "./social": "./src/social/index.ts",
+    "./wallet": "./src/wallet/index.ts",
     "./runner": "./src/runner/index.ts"
   },
   "bin": {

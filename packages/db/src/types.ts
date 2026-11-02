@@ -15,6 +15,8 @@ export const BOUNDED_CONTEXTS = [
   "notifications",
   "support",
   "integrations",
+  "social",
+  "wallet",
 ] as const;
 
 export type BoundedContext = (typeof BOUNDED_CONTEXTS)[number];
