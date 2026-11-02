@@ -1,0 +1,14 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-5
+  title: "KY1: redeploy api-edge with the social route"
+spec:
+  goal: api-edge serves /v1/social/** on stage and prod.
+  affects:
+    - default/kuyil/api-edge
+    - apps/api-edge/**
+    - tasks/**
+  doneWhen:
+    - GET /v1/social/health reports db true on stage and prod through api-edge.
+  gates: []
