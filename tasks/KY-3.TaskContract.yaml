@@ -1,0 +1,14 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: KY-3
+  title: "KY1: social-worker deploys"
+spec:
+  goal: social-worker and api-edge deploy on stage and prod, so the Kuyil API is live.
+  affects:
+    - default/kuyil/social-worker
+    - apps/social-worker/**
+    - tasks/**
+  doneWhen:
+    - GET /v1/social/health reports db true on stage and prod.
+  gates: []
