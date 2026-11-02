@@ -1,0 +1,34 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: db
+  description: Postgres access for the fleet — branded ids, the typed query layer, and the repositories each bounded context reads through.
+spec:
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture }
+      - { path: docs/runbook.md, role: runbook }
+  type: turbo-package
+  lifecycle: production
+  owner: platform
+  domain: starter-data
+  subscribe:
+    environments:
+      - name: dev
+        profile: quick-check
+      - name: stage
+        profile: quick-check
+      - name: prod
+        profile: quick-check
+  parameters:
+    nodeVersion: "20"
+    pnpmVersion: "10.12.1"
+    buildCommand: pnpm exec turbo run build --filter=./
+    typecheckCommand: pnpm exec turbo run typecheck --filter=./
+  labels:
+    team: platform
+    layer: shared
+    surface: data
+# ci: trigger full-component verification (orun v2.12.0 upgrade — PR #183)
+# orun: redeploy 02-foundation 20261102T070906Z
